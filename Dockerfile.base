@@ -122,7 +122,8 @@ COPY \
     boards/licheepi-nano-custom/packages/buildroot/external.desc \
     boards/licheepi-nano-custom/packages/buildroot/external.mk \
     .
-# GCC TARGET package
+
+# try compile GCC TARGET package
 WORKDIR ${HOME}/external/licheepi_nano_custom/package
 COPY boards/licheepi-nano-custom/packages/gcc-target gcc-target
 
