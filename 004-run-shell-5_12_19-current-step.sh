@@ -5,5 +5,3 @@ docker run --ipc=host  -it --rm \
   -v ${PWD}/:/home/${USER}/from_host_mapped \
   ${DOCKER_ID} \
   /bin/bash
-##  --rm
-### licheepi-nano-axel-rouse-full \

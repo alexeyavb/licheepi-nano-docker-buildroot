@@ -11,5 +11,4 @@ docker build  --build-arg UID=$UID --build-arg USERNAME=$USER \
     -t $DOCKER_ID \
     --target $TARGET \
     -f Dockerfile.base \
-    .
-#    --output type=tar,dest=- . | (mkdir -p dist && tar x -C dist)
+    --output type=tar,dest=- . | (mkdir -p dist && tar x -C dist)
