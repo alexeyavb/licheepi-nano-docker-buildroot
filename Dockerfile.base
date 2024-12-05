@@ -1,0 +1,153 @@
+FROM ubuntu:24.04 AS base
+ARG UID
+ARG USERNAME
+
+ENV FORCE_UNSAFE_CONFIGURE=1
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ARMB_VERSION=v24.11
+
+# ENV Settings
+ENV HOME=/home/${USERNAME}
+ENV ARMB_B=${HOME}/armbian_builder
+ENV BUILD_HOME=${ARMB_B}/builder
+
+# Create a non-root user(sudoers w/o password) and switch to it
+
+# cache apt-get update results
+RUN apt-get update
+
+# install build prerequisites
+# @todo remove python3-distutils after upgrading U-Boot
+RUN apt-get install -qy \
+    bc \
+    bison \
+    build-essential \
+    bzr \
+    chrpath \
+    cpio \
+    cvs \
+    devscripts \
+    diffstat \
+    dosfstools \
+    fakeroot \
+    flex \
+    gawk \
+    git \
+    libncurses5-dev \
+    libssl-dev \
+    locales \
+    python3-dev \
+    python3-setuptools \
+    yamllint \
+    python3-pyelftools \
+    python3-unidecode \
+    python3-coloredlogs \
+    python3-yamlordereddictloader \
+    rsync \
+    subversion \
+    swig \
+    texinfo \
+    unzip \
+    wget \
+    whiptail \
+    nano \
+    mc \
+    sudo
+
+RUN useradd --uid ${UID} --create-home --shell /bin/bash -G sudo,root ${USERNAME} \
+    && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+# external toolchain needs this
+RUN update-locale LC_ALL=C
+
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
+
+ENV BUILDROOT_RELEASE=2023.08.3
+
+WORKDIR ${HOME}/buildroot/${BUILDROOT_RELEASE}
+RUN wget -qO- http://buildroot.org/downloads/buildroot-${BUILDROOT_RELEASE}.tar.gz | tar --strip-components=1 -xz
+
+#
+#
+# @ sdk build scenario
+#
+#####################################################################
+FROM base AS sdk_kernel_5_12_prepare
+ENV EXT_PKG_PATH=${HOME}/external
+
+WORKDIR ${EXT_PKG_PATH}/licheepi-nano-sdk
+RUN echo 'name: LICHEEPI_NANO_SDK' >> external.desc
+RUN echo 'desc: Kernel 5.12 GCC12 LicheePi Nano SDK only' >> external.desc
+RUN touch external.mk Config.in
+COPY boards/licheepi-nano-custom/configs/sdk/licheepi_nano_sdk_5_12_defconfig configs/
+WORKDIR ${HOME}/buildroot/${BUILDROOT_RELEASE}
+RUN BR2_EXTERNAL=${EXT_PKG_PATH}/licheepi-nano-sdk make licheepi_nano_sdk_5_12_defconfig
+
+FROM sdk_kernel_5_12_prepare AS sdk_kernel_5_12_make
+RUN make sdk
+
+FROM sdk_kernel_5_12_make AS sdk_kernel_5_12_fine
+COPY --from=sdk_kernel_5_12_make ${HOME}/buildroot/${BUILDROOT_RELEASE}/output/images/arm-buildroot-linux-gnueabi_sdk-buildroot.tar.gz ${HOME}/sdk/
+RUN echo end building of sdk
+
+#
+#
+# @ base download and prepare
+#
+#####################################################################
+FROM base AS get_all_external
+
+ENV KRNL_VER=5
+ENV KRNL_MVER=12
+ENV KRNL_LVER=19
+ENV KRNL_RLS=${KRNL_VER}.${KRNL_MVER}
+ENV KRNL_FRLS=${KRNL_VER}.${KRNL_MVER}.${KRNL_LVER}
+
+RUN echo start external downloads
+WORKDIR ${HOME}/external
+COPY boards/licheepi-nano-custom/tarballs/sdk/gcc_13_3_kernel_5_15/arm-buildroot-linux-gnueabi_sdk-buildroot.tar.gz sdk/
+COPY boards/licheepi-nano-custom/tarballs/uboot/uboot-v2021.01-f1c100s-4-br1.tar.gz uboot/
+COPY boards/licheepi-nano-custom/tarballs/kernel/linux-${KRNL_FRLS}.tar.xz kernel/
+COPY boards/licheepi-nano-custom/patches/kernel/${KRNL_FRLS} kernel/patches/
+
+#
+# @ setting up external board settings for br
+WORKDIR ${HOME}/external/licheepi_nano_custom
+COPY boards/licheepi-nano-custom/configs/buildroot/licheepi_nano_5_12_19_defconfig configs/licheepi_nano_custom_defconfig
+COPY boards/licheepi-nano-custom/board board
+COPY boards/licheepi-nano-custom/configs/linux/${KRNL_RLS}/licheepi_nano_custom_linux_defconfig board/licheepi_nano_custom/
+COPY \
+    boards/licheepi-nano-custom/packages/buildroot/Config.in \
+    boards/licheepi-nano-custom/packages/buildroot/external.desc \
+    boards/licheepi-nano-custom/packages/buildroot/external.mk \
+    .
+# GCC TARGET package
+WORKDIR ${HOME}/external/licheepi_nano_custom/package
+COPY boards/licheepi-nano-custom/packages/gcc-target gcc-target
+
+RUN echo END of external download.
+
+#
+#
+# @ base prebuilding deps
+#
+#####################################################################
+FROM get_all_external AS br_config_prepare
+WORKDIR ${HOME}/buildroot/${BUILDROOT_RELEASE}
+RUN BR2_EXTERNAL=${HOME}/external/licheepi_nano_custom make licheepi_nano_custom_defconfig
+
+FROM br_config_prepare AS toolchain_prepare
+RUN make toolchain
+RUN make linux-source
+RUN make uboot-source
+
+FROM  toolchain_prepare AS build
+RUN make
+
+FROM scratch AS dist
+ARG USERNAME
+ENV HOME=/home/${USERNAME}
+ENV BUILDROOT_RELEASE=2023.08.3
+COPY --from=build ${HOME}/buildroot/${BUILDROOT_RELEASE}/output/images .
+

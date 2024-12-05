@@ -1,0 +1,15 @@
+# @todo remove Vagrant ignores
+/.vagrant
+/*console.log
+
+# output folder from Docker command
+/dist
+/dist.*
+/kernel-distrib
+/kernel-patched
+*.tar.xz
+*.tar.gz
+001-from-linux-5.11-to-custom*
+/5.*
+.tmp/
+image*/

@@ -1,0 +1,832 @@
+Binary files a/arch/arm/boot/compressed/piggy_data and b/arch/arm/boot/compressed/piggy_data differ
+diff -ruN -x generated -x kernel -x scripts a/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano-custom.dts b/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano-custom.dts
+--- a/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano-custom.dts	1970-01-01 00:00:00.000000000 +0000
++++ b/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano-custom.dts	2024-11-30 17:54:46.599320760 +0000
+@@ -0,0 +1,88 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR X11)
++// based on https://github.com/Lichee-Pi/linux/blob/nano-5.2-flash/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano.dts on 2021-08
++/*
++ * Copyright 2018 Icenowy Zheng <icenowy@aosc.io>
++ */
++
++/dts-v1/;
++#include "suniv-f1c100s-licheepi-nano.dts"
++
++/ {
++	model = "Lichee Pi Nano (Custom)";
++};
++
++/*
++&panel {
++	// override default resolution (800x480) with smaller resolution: 480x272
++	compatible = "qiaodian,qd43003c0-40", "simple-panel";
++};
++*/
++
++/*
++&lradc {
++	// keymap for low-resolution ADC input driver
++	// (pulling voltage down to different levels 0V-2V on LRADC pin causes this to emit different
++	// keyboard codes - pull pin back up to 3.3V when button is off)
++	button-200 {
++		label = "Volume Up";
++		linux,code = <KEY_VOLUMEUP>;
++		channel = <0>;
++		voltage = <200000>;
++	};
++
++	button-400 {
++		label = "Volume Down";
++		linux,code = <KEY_VOLUMEDOWN>;
++		channel = <0>;
++		voltage = <400000>;
++	};
++
++	button-600 {
++		label = "Select";
++		linux,code = <KEY_SELECT>;
++		channel = <0>;
++		voltage = <600000>;
++	};
++
++	button-800 {
++		label = "Start";
++		linux,code = <KEY_OK>;
++		channel = <0>;
++		voltage = <800000>;
++	};
++};
++*/
++
++/*
++&flash {
++	// hard-coded partition table for booting from Flash
++	partitions {
++		compatible = "fixed-partitions";
++		#address-cells = <1>;
++		#size-cells = <1>;
++
++		partition@0 {
++			label = "u-boot";
++			reg = <0x000000 0x100000>;
++			read-only;
++		};
++
++		partition@100000 {
++			label = "dtb";
++			reg = <0x100000 0x10000>;
++			read-only;
++		};
++
++		partition@110000 {
++			label = "kernel";
++			reg = <0x110000 0x400000>;
++			read-only;
++		};
++
++		partition@520000 {
++			label = "rootfs";
++			reg = <0x510000 0xAF0000>;
++		};
++	};
++};
++*/
+diff -ruN -x generated -x kernel -x scripts a/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano.dts b/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano.dts
+--- a/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano.dts	2021-02-14 22:32:24.000000000 +0000
++++ b/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano.dts	2023-02-19 05:41:32.000000000 +0000
+@@ -5,6 +5,12 @@
+ 
+ /dts-v1/;
+ #include "suniv-f1c100s.dtsi"
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/input.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++#include "sunxi-common-regulators.dtsi"
++
++#include <dt-bindings/gpio/gpio.h>
+ 
+ / {
+ 	model = "Lichee Pi Nano";
+@@ -12,11 +18,193 @@
+ 
+ 	aliases {
+ 		serial0 = &uart0;
++		spi0 = &spi0;
+ 	};
+ 
+ 	chosen {
+ 		stdout-path = "serial0:115200n8";
+ 	};
++
++	panel: panel {
++		// default 800x480 resolution setup
++		compatible = "lg,lb070wv8", "simple-panel";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		enable-gpios = <&pio 4 6 GPIO_ACTIVE_HIGH>;
++		power-supply = <&reg_vcc3v3>;
++
++ 		port@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++ 			panel_input: endpoint@0 {
++				reg = <0>;
++				remote-endpoint = <&tcon0_out_lcd>;
++			};
++		};
++	};
++
++	reg_vcc3v3: vcc3v3 {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc3v3";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++	};
++};
++
++&be0 {
++	status = "okay";
++};
++
++&de {
++	status = "okay";
++};
++
++&i2c0 {
++    pinctrl-0 = <&i2c0_pins>;
++    pinctrl-names = "default";
++    status = "okay";
++
++    gt911: touchscreen@14 {
++        compatible = "goodix,gt911";
++        reg = <0x14>;
++        interrupt-parent = <&pio>;
++        interrupts = <4 10 IRQ_TYPE_EDGE_FALLING>; /* (PE10) */
++        pinctrl-names = "default";
++        irq-gpios = <&pio 4 10 GPIO_ACTIVE_HIGH>; /* (PE10) */
++        reset-gpios = <&pio 4 9 GPIO_ACTIVE_HIGH>; /* RST (PE9) */
++        /* touchscreen-swapped-x-y */
++    };
++};
++
++&mmc0 {
++	vmmc-supply = <&reg_vcc3v3>;
++	bus-width = <4>;
++	broken-cd;
++	status = "okay";
++};
++
++&pio {
++    ts_reset_pin: ts_reset_pin@0 {
++        pins = "PE9";
++        function = "gpio_out";
++    };
++};
++
++&lradc {
++	vref-supply = <&reg_vcc3v0>;
++	status = "okay";
++
++	/*
++	// example keymap for low-resolution ADC input driver, customize this for your hardware
++	// (pulling voltage down to different levels 0V-2V on LRADC pin causes this to emit different
++	// keyboard codes - pull pin back up to 3.3V when button is off)
++	button-200 {
++		label = "Volume Up";
++		linux,code = <KEY_VOLUMEUP>;
++		channel = <0>;
++		voltage = <200000>;
++	};
++
++	button-400 {
++		label = "Volume Down";
++		linux,code = <KEY_VOLUMEDOWN>;
++		channel = <0>;
++		voltage = <400000>;
++	};
++
++	button-600 {
++		label = "Select";
++		linux,code = <KEY_SELECT>;
++		channel = <0>;
++		voltage = <600000>;
++	};
++
++	button-800 {
++		label = "Start";
++		linux,code = <KEY_OK>;
++		channel = <0>;
++		voltage = <800000>;
++	};
++	*/
++};
++
++&spi0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&spi0_pins_a>;
++	status = "okay";
++
++	flash: w25q128@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "winbond,w25q128", "jedec,spi-nor";
++		reg = <0>;
++		spi-max-frequency = <50000000>;
++
++		/*
++		// example partition table, customize this for your Flash-boot distribution
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			partition@0 {
++				label = "u-boot";
++				reg = <0x000000 0x100000>;
++				read-only;
++			};
++
++			partition@100000 {
++				label = "dtb";
++				reg = <0x100000 0x10000>;
++				read-only;
++			};
++
++			partition@110000 {
++				label = "kernel";
++				reg = <0x110000 0x400000>;
++				read-only;
++			};
++
++			partition@520000 {
++				label = "rootfs";
++				reg = <0x510000 0xAF0000>;
++			};
++		};
++		*/
++	};
++};
++
++&tcon0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&lcd_rgb666_pins>;
++	status = "okay";
++};
++
++&tcon0_out {
++	tcon0_out_lcd: endpoint@0 {
++		reg = <0>;
++		remote-endpoint = <&panel_input>;
++	};
++};
++
++&otg_sram {
++	status = "okay";
++};
++
++&spi0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&spi0_pins_a>;
++	status = "okay";
++
++	flash@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "winbond,w25q128", "jedec,spi-nor";
++		reg = <0>;
++		spi-max-frequency = <40000000>;
++	};
+ };
+ 
+ &uart0 {
+@@ -24,3 +212,13 @@
+ 	pinctrl-0 = <&uart0_pe_pins>;
+ 	status = "okay";
+ };
++
++&usb_otg {
++	dr_mode = "otg";
++	status = "okay";
++};
++
++&usbphy {
++	usb0_id_det-gpio = <&pio 4 2 GPIO_ACTIVE_HIGH>; /* PE2 */
++	status = "okay";
++};
+diff -ruN -x generated -x kernel -x scripts a/arch/arm/boot/dts/suniv-f1c100s.dtsi b/arch/arm/boot/dts/suniv-f1c100s.dtsi
+--- a/arch/arm/boot/dts/suniv-f1c100s.dtsi	2021-02-14 22:32:24.000000000 +0000
++++ b/arch/arm/boot/dts/suniv-f1c100s.dtsi	2023-02-19 05:41:32.000000000 +0000
+@@ -4,6 +4,10 @@
+  * Copyright 2018 Mesih Kilinc <mesihkilinc@gmail.com>
+  */
+ 
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++#include <dt-bindings/clock/suniv-ccu-f1c100s.h>
++#include <dt-bindings/reset/suniv-ccu-f1c100s.h>
++
+ / {
+ 	#address-cells = <1>;
+ 	#size-cells = <1>;
+@@ -31,6 +35,12 @@
+ 			device_type = "cpu";
+ 		};
+ 	};
++	
++	de: display-engine {
++		compatible = "allwinner,suniv-f1c100s-display-engine";
++		allwinner,pipelines = <&fe0>;
++		status = "disabled";
++	};
+ 
+ 	soc {
+ 		compatible = "simple-bus";
+@@ -62,6 +72,68 @@
+ 			};
+ 		};
+ 
++		spi0: spi@1c05000 {
++			compatible = "allwinner,suniv-f1c100s-spi",
++				     "allwinner,sun8i-h3-spi";
++			reg = <0x01c05000 0x1000>;
++			interrupts = <10>;
++			clocks = <&ccu CLK_BUS_SPI0>, <&ccu CLK_BUS_SPI0>;
++			clock-names = "ahb", "mod";
++			resets = <&ccu RST_BUS_SPI0>;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		spi1: spi@1c06000 {
++			compatible = "allwinner,suniv-f1c100s-spi",
++				     "allwinner,sun8i-h3-spi";
++			reg = <0x01c06000 0x1000>;
++			interrupts = <11>;
++			clocks = <&ccu CLK_BUS_SPI1>, <&ccu CLK_BUS_SPI1>;
++			clock-names = "ahb", "mod";
++			resets = <&ccu RST_BUS_SPI1>;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		tcon0: lcd-controller@1c0c000 {
++			compatible = "allwinner,suniv-f1c100s-tcon";
++			reg = <0x01c0c000 0x1000>;
++			interrupts = <29>;
++			clocks = <&ccu CLK_BUS_LCD>,
++				 <&ccu CLK_TCON>;
++			clock-names = "ahb",
++				      "tcon-ch0";
++			clock-output-names = "tcon-pixel-clock";
++			resets = <&ccu RST_BUS_LCD>;
++			reset-names = "lcd";
++			status = "disabled";
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				tcon0_in: port@0 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <0>;
++
++					tcon0_in_be0: endpoint@0 {
++						reg = <0>;
++						remote-endpoint = <&be0_out_tcon0>;
++					};
++				};
++
++				tcon0_out: port@1 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <1>;
++				};
++			};
++		};
++
+ 		ccu: clock@1c20000 {
+ 			compatible = "allwinner,suniv-f1c100s-ccu";
+ 			reg = <0x01c20000 0x400>;
+@@ -71,6 +143,19 @@
+ 			#reset-cells = <1>;
+ 		};
+ 
++		i2c0: i2c@1C27000 {
++			compatible = "allwinner,sun6i-a31-i2c";
++			reg = <0x01C27000 0x400>;
++			interrupts = <7>;
++			clocks = <&ccu CLK_BUS_I2C0>;
++			resets = <&ccu RST_BUS_I2C0>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&i2c0_pins>;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
+ 		intc: interrupt-controller@1c20400 {
+ 			compatible = "allwinner,suniv-f1c100s-ic";
+ 			reg = <0x01c20400 0x400>;
+@@ -82,17 +167,41 @@
+ 			compatible = "allwinner,suniv-f1c100s-pinctrl";
+ 			reg = <0x01c20800 0x400>;
+ 			interrupts = <38>, <39>, <40>;
+-			clocks = <&ccu 37>, <&osc24M>, <&osc32k>;
++			clocks = <&ccu CLK_BUS_PIO>, <&osc24M>, <&osc32k>;
+ 			clock-names = "apb", "hosc", "losc";
+ 			gpio-controller;
+ 			interrupt-controller;
+ 			#interrupt-cells = <3>;
+ 			#gpio-cells = <3>;
+ 
++			i2c0_pins: i2c0 {
++				pins = "PE11", "PE12";
++				function = "i2c0";
++			};
++
+ 			uart0_pe_pins: uart0-pe-pins {
+ 				pins = "PE0", "PE1";
+ 				function = "uart0";
+ 			};
++			
++			lcd_rgb666_pins: lcd-rgb666-pins {
++				pins = "PD0", "PD1", "PD2", "PD3", "PD4",
++				       "PD5", "PD6", "PD7", "PD8", "PD9",
++				       "PD10", "PD11", "PD12", "PD13", "PD14",
++				       "PD15", "PD16", "PD17", "PD18", "PD19",
++				       "PD20", "PD21";
++				function = "lcd";
++			};
++
++			mmc0_pins: mmc0-pins {
++				pins = "PF0", "PF1", "PF2", "PF3", "PF4", "PF5";
++				function = "mmc0";
++			};
++
++			spi0_pins_a: spi0-pins-pc {
++				pins = "PC0", "PC1", "PC2", "PC3";
++				function = "spi0";
++			};
+ 		};
+ 
+ 		timer@1c20c00 {
+@@ -102,20 +211,69 @@
+ 			clocks = <&osc24M>;
+ 		};
+ 
++		mmc0: mmc@1c0f000 {
++			compatible = "allwinner,suniv-f1c100s-mmc",
++				     "allwinner,sun7i-a20-mmc";
++			reg = <0x01c0f000 0x1000>;
++			clocks = <&ccu CLK_BUS_MMC0>,
++				 <&ccu CLK_MMC0>,
++				 <&ccu CLK_MMC0_OUTPUT>,
++				 <&ccu CLK_MMC0_SAMPLE>;
++			clock-names = "ahb",
++				      "mmc",
++				      "output",
++				      "sample";
++			resets = <&ccu RST_BUS_MMC0>;
++			reset-names = "ahb";
++			interrupts = <23>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&mmc0_pins>;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		mmc1: mmc@1c10000 {
++			compatible = "allwinner,suniv-f1c100s-mmc",
++				     "allwinner,sun7i-a20-mmc";
++			reg = <0x01c10000 0x1000>;
++			clocks = <&ccu CLK_BUS_MMC1>,
++				 <&ccu CLK_MMC1>,
++				 <&ccu CLK_MMC1_OUTPUT>,
++				 <&ccu CLK_MMC1_SAMPLE>;
++			clock-names = "ahb",
++				      "mmc",
++				      "output",
++				      "sample";
++			resets = <&ccu RST_BUS_MMC1>;
++			reset-names = "ahb";
++			interrupts = <24>;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
+ 		wdt: watchdog@1c20ca0 {
+ 			compatible = "allwinner,suniv-f1c100s-wdt",
+ 				     "allwinner,sun4i-a10-wdt";
+ 			reg = <0x01c20ca0 0x20>;
+ 		};
+ 
++		lradc: lradc@1C23400 {
++			compatible = "allwinner,sun4i-a10-lradc-keys";
++			reg = <0x01C23400 0x400>;
++			interrupts = <22>;
++			status = "disabled";
++		};
++
+ 		uart0: serial@1c25000 {
+ 			compatible = "snps,dw-apb-uart";
+ 			reg = <0x01c25000 0x400>;
+ 			interrupts = <1>;
+ 			reg-shift = <2>;
+ 			reg-io-width = <4>;
+-			clocks = <&ccu 38>;
+-			resets = <&ccu 24>;
++			clocks = <&ccu CLK_BUS_UART0>;
++			resets = <&ccu RST_BUS_UART0>;
+ 			status = "disabled";
+ 		};
+ 
+@@ -125,8 +283,8 @@
+ 			interrupts = <2>;
+ 			reg-shift = <2>;
+ 			reg-io-width = <4>;
+-			clocks = <&ccu 39>;
+-			resets = <&ccu 25>;
++			clocks = <&ccu CLK_BUS_UART1>;
++			resets = <&ccu RST_BUS_UART1>;
+ 			status = "disabled";
+ 		};
+ 
+@@ -136,8 +294,104 @@
+ 			interrupts = <3>;
+ 			reg-shift = <2>;
+ 			reg-io-width = <4>;
+-			clocks = <&ccu 40>;
+-			resets = <&ccu 26>;
++			clocks = <&ccu CLK_BUS_UART2>;
++			resets = <&ccu RST_BUS_UART2>;
++			status = "disabled";
++		};
++
++		fe0: display-frontend@1e00000 {
++			compatible = "allwinner,suniv-f1c100s-display-frontend";
++			reg = <0x01e00000 0x20000>;
++			interrupts = <30>;
++			clocks = <&ccu CLK_BUS_DE_FE>, <&ccu CLK_DE_FE>,
++				 <&ccu CLK_DRAM_DE_FE>;
++			clock-names = "ahb", "mod",
++				      "ram";
++			resets = <&ccu RST_BUS_DE_FE>;
++			status = "disabled";
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				fe0_out: port@1 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <1>;
++
++					fe0_out_be0: endpoint@0 {
++						reg = <0>;
++						remote-endpoint = <&be0_in_fe0>;
++					};
++				};
++			};
++		};
++
++		be0: display-backend@1e60000 {
++			compatible = "allwinner,suniv-f1c100s-display-backend";
++			reg = <0x01e60000 0x10000>;
++			reg-names = "be";
++			interrupts = <31>;
++			clocks = <&ccu CLK_BUS_DE_BE>, <&ccu CLK_DE_BE>,
++				 <&ccu CLK_DRAM_DE_BE>;
++			clock-names = "ahb", "mod",
++				      "ram";
++			resets = <&ccu RST_BUS_DE_BE>;
++			reset-names = "be";
++			assigned-clocks = <&ccu CLK_DE_BE>;
++			assigned-clock-rates = <300000000>;
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				be0_in: port@0 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <0>;
++
++					be0_in_fe0: endpoint@0 {
++						reg = <0>;
++						remote-endpoint = <&fe0_out_be0>;
++					};
++				};
++
++				be0_out: port@1 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <1>;
++
++					be0_out_tcon0: endpoint@0 {
++						reg = <0>;
++						remote-endpoint = <&tcon0_in_be0>;
++					};
++				};
++			};
++		};
++
++		usb_otg: usb@1c13000 {
++			compatible = "allwinner,suniv-f1c100s-musb";
++			reg = <0x01c13000 0x0400>;
++			clocks = <&ccu CLK_BUS_OTG>;
++			resets = <&ccu RST_BUS_OTG>;
++			interrupts = <26>;
++			interrupt-names = "mc";
++			phys = <&usbphy 0>;
++			phy-names = "usb";
++			extcon = <&usbphy 0>;
++			allwinner,sram = <&otg_sram 1>;
++			status = "disabled";
++		};
++
++		usbphy: phy@1c13400 {
++			compatible = "allwinner,suniv-f1c100s-usb-phy";
++			reg = <0x01c13400 0x10>;
++			reg-names = "phy_ctrl";
++			clocks = <&ccu CLK_USB_PHY0>;
++			clock-names = "usb0_phy";
++			resets = <&ccu RST_USB_PHY0>;
++			reset-names = "usb0_reset";
++			#phy-cells = <1>;
+ 			status = "disabled";
+ 		};
+ 	};
+diff -ruN -x generated -x kernel -x scripts a/drivers/gpu/drm/sun4i/sun4i_backend.c b/drivers/gpu/drm/sun4i/sun4i_backend.c
+--- a/drivers/gpu/drm/sun4i/sun4i_backend.c	2021-02-14 22:32:24.000000000 +0000
++++ b/drivers/gpu/drm/sun4i/sun4i_backend.c	2023-02-19 05:41:32.000000000 +0000
+@@ -975,6 +975,9 @@
+ 	return 0;
+ }
+ 
++static const struct sun4i_backend_quirks suniv_backend_quirks = {
++};
++
+ static const struct sun4i_backend_quirks sun4i_backend_quirks = {
+ 	.needs_output_muxing = true,
+ };
+@@ -998,6 +1001,10 @@
+ 
+ static const struct of_device_id sun4i_backend_of_table[] = {
+ 	{
++		.compatible = "allwinner,suniv-f1c100s-display-backend",
++		.data = &suniv_backend_quirks,
++	},
++	{
+ 		.compatible = "allwinner,sun4i-a10-display-backend",
+ 		.data = &sun4i_backend_quirks,
+ 	},
+diff -ruN -x generated -x kernel -x scripts a/drivers/gpu/drm/sun4i/sun4i_drv.c b/drivers/gpu/drm/sun4i/sun4i_drv.c
+--- a/drivers/gpu/drm/sun4i/sun4i_drv.c	2021-02-14 22:32:24.000000000 +0000
++++ b/drivers/gpu/drm/sun4i/sun4i_drv.c	2023-02-19 05:41:32.000000000 +0000
+@@ -151,7 +151,8 @@
+ 
+ static bool sun4i_drv_node_is_frontend(struct device_node *node)
+ {
+-	return of_device_is_compatible(node, "allwinner,sun4i-a10-display-frontend") ||
++	return of_device_is_compatible(node, "allwinner,suniv-f1c100s-display-frontend") ||
++		of_device_is_compatible(node, "allwinner,sun4i-a10-display-frontend") ||
+ 		of_device_is_compatible(node, "allwinner,sun5i-a13-display-frontend") ||
+ 		of_device_is_compatible(node, "allwinner,sun6i-a31-display-frontend") ||
+ 		of_device_is_compatible(node, "allwinner,sun7i-a20-display-frontend") ||
+@@ -412,6 +413,7 @@
+ }
+ 
+ static const struct of_device_id sun4i_drv_of_table[] = {
++	{ .compatible = "allwinner,suniv-f1c100s-display-engine" },
+ 	{ .compatible = "allwinner,sun4i-a10-display-engine" },
+ 	{ .compatible = "allwinner,sun5i-a10s-display-engine" },
+ 	{ .compatible = "allwinner,sun5i-a13-display-engine" },
+diff -ruN -x generated -x kernel -x scripts a/drivers/gpu/drm/sun4i/sun4i_tcon.c b/drivers/gpu/drm/sun4i/sun4i_tcon.c
+--- a/drivers/gpu/drm/sun4i/sun4i_tcon.c	2021-02-14 22:32:24.000000000 +0000
++++ b/drivers/gpu/drm/sun4i/sun4i_tcon.c	2023-02-19 05:41:32.000000000 +0000
+@@ -1472,6 +1472,16 @@
+ 	return 0;
+ }
+ 
++static const struct sun4i_tcon_quirks suniv_f1c100s_quirks = {
++	/*
++	 * The F1C100s SoC has a second channel in TCON, but the clock input of
++	 * it is not documented.
++	 */
++	.has_channel_0		= true,
++	/* .has_channel_1	= true, */
++	.dclk_min_div		= 4,
++};
++
+ static const struct sun4i_tcon_quirks sun4i_a10_quirks = {
+ 	.has_channel_0		= true,
+ 	.has_channel_1		= true,
+@@ -1563,6 +1573,7 @@
+ 
+ /* sun4i_drv uses this list to check if a device node is a TCON */
+ const struct of_device_id sun4i_tcon_of_table[] = {
++	{ .compatible = "allwinner,suniv-f1c100s-tcon", .data = &suniv_f1c100s_quirks },
+ 	{ .compatible = "allwinner,sun4i-a10-tcon", .data = &sun4i_a10_quirks },
+ 	{ .compatible = "allwinner,sun5i-a13-tcon", .data = &sun5i_a13_quirks },
+ 	{ .compatible = "allwinner,sun6i-a31-tcon", .data = &sun6i_a31_quirks },
+diff -ruN -x generated -x kernel -x scripts a/drivers/mtd/spi-nor/winbond.c b/drivers/mtd/spi-nor/winbond.c
+--- a/drivers/mtd/spi-nor/winbond.c	2021-02-14 22:32:24.000000000 +0000
++++ b/drivers/mtd/spi-nor/winbond.c	2023-02-19 05:41:32.000000000 +0000
+@@ -87,7 +87,9 @@
+ 			    SPI_NOR_HAS_LOCK | SPI_NOR_HAS_TB) },
+ 	{ "w25q80", INFO(0xef5014, 0, 64 * 1024,  16, SECT_4K) },
+ 	{ "w25q80bl", INFO(0xef4014, 0, 64 * 1024,  16, SECT_4K) },
+-	{ "w25q128", INFO(0xef4018, 0, 64 * 1024, 256, SECT_4K) },
++	// no sector size per http://nano.lichee.pro/build_sys/build_flash.html?highlight=sect_4k#id16
++	// { "w25q128", INFO(0xef4018, 0, 64 * 1024, 256, SECT_4K) },
++	{ "w25q128", INFO(0xef4018, 0, 64 * 1024, 256, 0) },
+ 	{ "w25q256", INFO(0xef4019, 0, 64 * 1024, 512,
+ 			  SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ)
+ 	  .fixups = &w25q256_fixups },
+@@ -97,6 +99,10 @@
+ 			     SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
+ 	{ "w25m512jv", INFO(0xef7119, 0, 64 * 1024, 1024,
+ 			    SECT_4K | SPI_NOR_QUAD_READ | SPI_NOR_DUAL_READ) },
++
++	/* XTX */
++	/* commented out by @unframework while porting florpor/linux#licheepi-nano-v5.4.140 */
++	/* { "xt25f128b", INFO(0x0b4018, 0, 64 * 1024, 256, SECT_4K) },*/
+ };
+ 
+ /**
+diff -ruN -x generated -x kernel -x scripts a/drivers/phy/allwinner/phy-sun4i-usb.c b/drivers/phy/allwinner/phy-sun4i-usb.c
+--- a/drivers/phy/allwinner/phy-sun4i-usb.c	2021-02-14 22:32:24.000000000 +0000
++++ b/drivers/phy/allwinner/phy-sun4i-usb.c	2023-02-19 05:41:32.000000000 +0000
+@@ -99,6 +99,7 @@
+ #define POLL_TIME			msecs_to_jiffies(250)
+ 
+ enum sun4i_usb_phy_type {
++	suniv_f1c100s_phy,
+ 	sun4i_a10_phy,
+ 	sun6i_a31_phy,
+ 	sun8i_a33_phy,
+@@ -857,6 +858,14 @@
+ 	return 0;
+ }
+ 
++static const struct sun4i_usb_phy_cfg suniv_f1c100s_cfg = {
++	.num_phys = 1,
++	.type = suniv_f1c100s_phy,
++	.disc_thresh = 3,
++	.phyctl_offset = REG_PHYCTL_A10,
++	.dedicated_clocks = true,
++};
++
+ static const struct sun4i_usb_phy_cfg sun4i_a10_cfg = {
+ 	.num_phys = 3,
+ 	.type = sun4i_a10_phy,
+@@ -970,6 +979,10 @@
+ };
+ 
+ static const struct of_device_id sun4i_usb_phy_of_match[] = {
++	{
++		.compatible = "allwinner,suniv-f1c100s-usb-phy",
++		.data = &suniv_f1c100s_cfg
++	},
+ 	{ .compatible = "allwinner,sun4i-a10-usb-phy", .data = &sun4i_a10_cfg },
+ 	{ .compatible = "allwinner,sun5i-a13-usb-phy", .data = &sun5i_a13_cfg },
+ 	{ .compatible = "allwinner,sun6i-a31-usb-phy", .data = &sun6i_a31_cfg },
+diff -ruN -x generated -x kernel -x scripts a/drivers/usb/musb/sunxi.c b/drivers/usb/musb/sunxi.c
+--- a/drivers/usb/musb/sunxi.c	2021-02-14 22:32:24.000000000 +0000
++++ b/drivers/usb/musb/sunxi.c	2023-02-19 05:41:32.000000000 +0000
+@@ -714,14 +714,17 @@
+ 	INIT_WORK(&glue->work, sunxi_musb_work);
+ 	glue->host_nb.notifier_call = sunxi_musb_host_notifier;
+ 
+-	if (of_device_is_compatible(np, "allwinner,sun4i-a10-musb"))
++	if (of_device_is_compatible(np, "allwinner,sun4i-a10-musb") ||
++	    of_device_is_compatible(np, "allwinner,suniv-f1c100s-musb")) {
+ 		set_bit(SUNXI_MUSB_FL_HAS_SRAM, &glue->flags);
++	}
+ 
+ 	if (of_device_is_compatible(np, "allwinner,sun6i-a31-musb"))
+ 		set_bit(SUNXI_MUSB_FL_HAS_RESET, &glue->flags);
+ 
+ 	if (of_device_is_compatible(np, "allwinner,sun8i-a33-musb") ||
+-	    of_device_is_compatible(np, "allwinner,sun8i-h3-musb")) {
++	    of_device_is_compatible(np, "allwinner,sun8i-h3-musb") ||
++	    of_device_is_compatible(np, "allwinner,suniv-f1c100s-musb")) {
+ 		set_bit(SUNXI_MUSB_FL_HAS_RESET, &glue->flags);
+ 		set_bit(SUNXI_MUSB_FL_NO_CONFIGDATA, &glue->flags);
+ 	}
+@@ -814,6 +817,7 @@
+ }
+ 
+ static const struct of_device_id sunxi_musb_match[] = {
++	{ .compatible = "allwinner,suniv-f1c100s-musb", },
+ 	{ .compatible = "allwinner,sun4i-a10-musb", },
+ 	{ .compatible = "allwinner,sun6i-a31-musb", },
+ 	{ .compatible = "allwinner,sun8i-a33-musb", },

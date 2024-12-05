@@ -1,0 +1,253 @@
+#
+# Main Buildroot config file for LicheePi Nano
+#
+
+#
+# ARMv5 compilation target
+#
+BR2_arm=y
+BR2_ARCH="arm"
+BR2_ENDIAN="LITTLE"
+BR2_GCC_TARGET_ABI="aapcs-linux"
+BR2_GCC_TARGET_CPU="arm926ej-s"
+BR2_GCC_TARGET_FLOAT_ABI="soft"
+BR2_GCC_TARGET_MODE="arm"
+BR2_ARM_CPU_MAYBE_HAS_FPU=y
+BR2_ARM_CPU_MAYBE_HAS_VFPV2=y
+BR2_ARM_CPU_HAS_ARM=y
+BR2_ARM_CPU_HAS_THUMB=y
+BR2_ARM_CPU_ARMV5=y
+BR2_ARM_ENABLE_VFP=n
+BR2_arm926t=y
+
+#
+# Debug messages for BR2 downloads
+#
+BR2_ENABLE_DEBUG=n
+
+#
+# Buildroot toolchain defined as external tarball
+#
+BR2_TOOLCHAIN_BUILDROOT=n
+BR2_TOOLCHAIN_EXTERNAL=y
+BR2_TOOLCHAIN_EXTERNAL_CUSTOM=y
+BR2_TOOLCHAIN_EXTERNAL_DOWNLOAD=y
+BR2_TOOLCHAIN_EXTERNAL_URL="file://$(BR2_EXTERNAL_LICHEEPI_NANO_CUSTOM_PATH)/../sdk/arm-buildroot-linux-gnueabi_sdk-buildroot.tar.gz"
+BR2_TOOLCHAIN_EXTERNAL_GCC_13=y
+BR2_TOOLCHAIN_GCC_AT_LEAST_13=y
+BR2_TOOLCHAIN_GLIBC_GCONV_LIBS_COPY=y
+BR2_SYSTEM_ENABLE_NLS=y
+#
+BR2_TOOLCHAIN_EXTERNAL_HEADERS_5_12=y
+BR2_TOOLCHAIN_EXTERNAL_CUSTOM_GLIBC=y
+BR2_TOOLCHAIN_EXTERNAL_CXX=y
+BR2_TOOLCHAIN_EXTERNAL_INET_RPC=n
+BR2_TOOLCHAIN_EXTERNAL_WCHAR=y
+BR2_TOOLCHAIN_EXTERNAL_LOCALE=y
+BR2_TOOLCHAIN_EXTERNAL_HAS_SSP=y
+BR2_TOOLCHAIN_EXTERNAL_HAS_SSP_STRONG=y
+
+
+#
+# OS name and login settings
+#
+BR2_TARGET_GENERIC_HOSTNAME="licheepi-nano"
+BR2_TARGET_GENERIC_ISSUE="Welcome to LicheePi Nano"
+BR2_TARGET_GENERIC_ROOT_PASSWD="root"
+BR2_TARGET_GENERIC_GETTY_PORT="/dev/ttyS0"
+BR2_TARGET_GENERIC_GETTY_BAUDRATE_115200=y
+
+# link time optimization
+BR2_ENABLE_LTO=n
+
+#
+# Custom file additions
+#
+BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_LICHEEPI_NANO_CUSTOM_PATH)/board/licheepi_nano_custom/rootfs-overlay"
+
+#
+# Linux kernel customized for the board
+# (using tarball download as it is much faster than Git)
+#
+BR2_LINUX_KERNEL=y
+BR2_LINUX_KERNEL_CUSTOM_TARBALL=y
+
+#
+# BR2_LINUX_KERNEL_CUSTOM_GIT=y
+# original Lichee-Pi Linux fork and branch without Flash-specific config changes
+# BR2_LINUX_KERNEL_CUSTOM_REPO_URL="https://github.com/Lichee-Pi/linux"
+# BR2_LINUX_KERNEL_CUSTOM_REPO_VERSION="nano-5.2-tf"
+
+# @unframework Linux fork and tag
+# (cherry-picked from Lichee-Pi Linux fork nano-5.2-flash branch as of 2021-03-06)
+# BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION="https://github.com/unframework/linux/archive/v5.11-nano-4/linux-5.11-nano4.tar.xz"
+
+# @AxR linux fork and tag
+BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION="file://$(BR2_EXTERNAL_LICHEEPI_NANO_CUSTOM_PATH)/../kernel/linux-5.12.19.tar.xz"
+BR2_LINUX_KERNEL_VERSION="v5.12.19-nano-4"
+BR2_LINUX_KERNEL_PATCH="$(BR2_EXTERNAL_LICHEEPI_NANO_CUSTOM_PATH)/../kernel/patches/"
+BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
+BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="$(BR2_EXTERNAL_LICHEEPI_NANO_CUSTOM_PATH)/board/licheepi_nano_custom/licheepi_nano_custom_linux_defconfig"
+
+#
+# original Lichee-Pi Linux fork provided defconfig
+# BR2_LINUX_KERNEL_DEFCONFIG="licheepi_nano"
+#
+# custom DTS file with local overrides
+BR2_LINUX_KERNEL_DTS_SUPPORT=y
+BR2_LINUX_KERNEL_CUSTOM_DTS_PATH="$(BR2_EXTERNAL_LICHEEPI_NANO_CUSTOM_PATH)/board/licheepi_nano_custom/suniv-f1c100s-licheepi-nano-custom.dts"
+
+#
+# Build root FS ext2 (for TF card)
+#
+BR2_TARGET_ROOTFS_EXT2=y
+BR2_TARGET_ROOTFS_EXT2_4=y
+BR2_TARGET_ROOTFS_EXT2_SIZE="64M"
+
+# BR2_TARGET_ROOTFS_TAR is not set
+
+#
+# Package up the images for deployment to board
+#
+BR2_ROOTFS_POST_IMAGE_SCRIPT="$(BR2_EXTERNAL_LICHEEPI_NANO_CUSTOM_PATH)/board/licheepi_nano_custom/post-image.sh"
+
+#
+# U-Boot customized for the board
+#
+BR2_TARGET_UBOOT=y
+# @todo this BR2_TARGET_UBOOT_BUILD_SYSTEM_KCONFIG=y
+BR2_TARGET_UBOOT_BOARDNAME="licheepi_nano"
+
+# @AxL rebased from unframework
+# for local storage tarball
+#
+BR2_TARGET_UBOOT_BUILD_SYSTEM_KCONFIG=y
+BR2_TARGET_UBOOT_CUSTOM_TARBALL=y
+BR2_TARGET_UBOOT_CUSTOM_TARBALL_LOCATION="file://$(BR2_EXTERNAL_LICHEEPI_NANO_CUSTOM_PATH)/../uboot/uboot-v2021.01-f1c100s-4-br1.tar.gz"
+BR2_TARGET_UBOOT_CUSTOM_VERSION="2021.01-f1c100s-4"
+BR2_TARGET_UBOOT_CUSTOM_VERSION_VALUE="2024.01-f1c100s-4"
+BR2_TARGET_UBOOT_BOARD_DEFCONFIG="licheepi_nano"
+#
+# @note
+# !!!!!! UBOOT DT FILES !!!!!!
+# Space-separated list of paths to device tree source files
+# that will be copied to arch/ARCH/dts/ before starting the
+# build.
+# To use this device tree source file, the U-Boot configuration
+# file must refer to it.
+#
+# BR2_TARGET_UBOOT_CUSTOM_DTS_PATH = ""
+#
+#################
+#
+# @note
+# A space-separated list of patches to apply to U-Boot
+# Each patch can be described as an URL, a local file path,
+# or a directory. In the case of a directory, all files
+# matching *.patch in the directory will be applied.
+#################
+# BR2_TARGET_UBOOT_PATCH=""
+#################
+#
+# !!!WARN custom uboot settings!!!!
+#
+#################
+# BR2_TARGET_UBOOT_USE_CUSTOM_CONFIG=y
+# BR2_TARGET_UBOOT_CUSTOM_CONFIG_FILE="file://uboot_custom_config_conf"
+#################
+
+# @unframework U-Boot fork and tag
+# (rebased from @Icenowy U-Boot fork f1c100s-spiflash branch as of 2021-03-06, plus others)
+# BR2_TARGET_UBOOT_CUSTOM_GIT=y
+# BR2_TARGET_UBOOT_CUSTOM_REPO_URL="https://github.com/unframework/u-boot"
+# BR2_TARGET_UBOOT_CUSTOM_REPO_VERSION="v2021.01-f1c100s-4"
+
+# original Lichee-Pi U-Boot fork and branch
+# BR2_TARGET_UBOOT_CUSTOM_REPO_URL="https://github.com/Lichee-Pi/u-boot"
+# BR2_TARGET_UBOOT_CUSTOM_REPO_VERSION="nano-v2018.01"
+
+BR2_TARGET_UBOOT_NEEDS_DTC=y
+BR2_TARGET_UBOOT_NEEDS_PYLIBFDT=y
+
+# BR2_TARGET_UBOOT_FORMAT_BIN is not set
+BR2_TARGET_UBOOT_FORMAT_CUSTOM=y
+BR2_TARGET_UBOOT_FORMAT_CUSTOM_NAME="u-boot-sunxi-with-spl.bin"
+
+BR2_PACKAGE_HOST_UBOOT_TOOLS=y
+BR2_PACKAGE_HOST_UBOOT_TOOLS_BOOT_SCRIPT=y
+BR2_PACKAGE_HOST_UBOOT_TOOLS_BOOT_SCRIPT_SOURCE="$(BR2_EXTERNAL_LICHEEPI_NANO_CUSTOM_PATH)/board/licheepi_nano_custom/boot.cmd"
+
+#
+# Extra host dependencies to build images
+#
+BR2_PACKAGE_HOST_GENIMAGE=y
+BR2_PACKAGE_HOST_MTOOLS=y
+BR2_PACKAGE_KMOD=y
+BR2_USE_MMU=y
+BR2_USE_WCHAR=y
+
+#
+# Preload Linux firmware source repo for dev
+#
+
+#####
+# superminisystem on busybox
+# for testing build
+#
+BR2_INIT_BUSYBOX=y
+###################################
+#
+# minimal settings for system
+#
+# BR2_INIT_BUSYBOX=n
+# BR2_INIT_TINYINIT=y
+#
+########
+#
+# very big blob
+#
+# BR2_PACKAGE_LINUX_FIRMWARE=n
+########
+#
+# rootfs setup
+# BR2_ROOTFS_MERGED_USR=y
+# BR2_INSTALL_LIBSTDCPP=y
+#
+# devfs setup
+# BR2_ROOTFS_DEVICE_CREATION_DYNAMIC_MDEV=y
+#
+# busybox settings
+# BR2_PACKAGE_BUSYBOX=y
+# BR2_PACKAGE_BUSYBOX_SHOW_OTHERS=y
+# BR2_PACKAGE_BUSYBOX_WATCHDOG=y
+#
+# system tools
+# BR2_PACKAGE_KMOD=y
+# BR2_PACKAGE_DAEMON=y
+# BR2_PACKAGE_PSMISC=y
+# BR2_PACKAGE_SYSKLOGD=y
+# BR2_PACKAGE_UTIL_LINUX=y
+# BR2_PACKAGE_SHADOW=y
+# BR2_PACKAGE_SHADOW_SHADOWGRP=y
+# BR2_PACKAGE_SHADOW_ACCOUNT_TOOLS_SETUID=y
+# BR2_PACKAGE_SUDO=y
+# BR2_PACKAGE_START_STOP_DAEMON=y
+# BR2_PACKAGE_EMPTY=y
+#
+# libraries
+# BR2_PACKAGE_ZLOG=y
+# BR2_PACKAGE_ICU=y
+# BR2_PACKAGE_TERMCOLOR=y
+# BR2_PACKAGE_UTF8PROC=y
+#
+# needed utilites
+# BR2_PACKAGE_TAR=y
+# BR2_PACKAGE_BZIP2=y
+# BR2_PACKAGE_GZIP=y
+# BR2_PACKAGE_XZ=y
+# BR2_PACKAGE_ZIP=y
+# BR2_PACKAGE_ZSTD=y
+# BR2_PACKAGE_BROTLI=y
+# BR2_PACKAGE_DTC=y
+# BR2_PACKAGE_LESS=y
+###### END minimal
