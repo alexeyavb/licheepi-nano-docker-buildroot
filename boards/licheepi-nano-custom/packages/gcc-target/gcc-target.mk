@@ -7,8 +7,14 @@
 #
 # Version, site and source
 #
-
+BR2_GCC_VERSION = "13.3.0"
 GCC_VERSION = $(call qstrip,$(BR2_GCC_VERSION))
+HOST_GCC_LICENSE = GPL-2.0, GPL-3.0, LGPL-2.1, LGPL-3.0
+HOST_GCC_LICENSE_FILES = COPYING COPYING3 COPYING.LIB COPYING3.LIB
+
+#
+# make ext-toolchain symlinkls
+#	ln -s /home/user/buildroot/2023.08.3/output/host/opt/ext-toolchain/bin/* /home/user/buildroot/2023.08.3/output/host/bin/
 
 ifeq ($(BR2_GCC_VERSION_ARC),y)
 GCC_SITE = $(call github,foss-for-synopsys-dwc-arc-processors,gcc,$(GCC_VERSION))
@@ -59,8 +65,11 @@ HOST_GCC_EXCLUDES = \
 #
 
 define HOST_GCC_CONFIGURE_SYMLINK
+	/home/user/buildroot/2023.08.3/output/host/opt/ext-toolchain/relocate-sdk.sh
+        ln -sf /home/user/buildroot/2023.08.3/output/host/opt/ext-toolchain/bin/* /home/user/buildroot/2023.08.3/output/host/bin/
         mkdir -p $(@D)/build
         ln -sf ../configure $(@D)/build/configure
+        ln -sf /home/user/buildroot/2023.08.3/output/host/opt/ext-toolchain/bin/* /home/user/buildroot/2023.08.3/output/host/bin/
 endef
 
 ################################################################################

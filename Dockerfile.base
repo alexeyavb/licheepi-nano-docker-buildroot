@@ -144,7 +144,8 @@ RUN make linux-source
 RUN make uboot-source
 
 FROM  toolchain_prepare AS build
-RUN make
+RUN make gcc-target
+# RUN make
 
 FROM scratch AS dist
 ARG USERNAME
