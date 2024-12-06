@@ -10,7 +10,7 @@ config BR2_PACKAGE_GCC_TARGET
 	  If you want the target system to be able to run
 	  binutils/gcc and compile native code, say Y here.
 
-config BR2_EXTRA_TARGET_GCC_CONFIG_OPTIONS
+config BR2_EXTRA_GCC_TARGET_CONFIG_OPTIONS
 	string "Additional target gcc options"
 	default ""
 	depends on BR2_PACKAGE_GCC_TARGET
@@ -18,3 +18,13 @@ config BR2_EXTRA_TARGET_GCC_CONFIG_OPTIONS
 	  Any additional target gcc options you may want to include....
 	  Including, but not limited to --disable-checking etc.
 	  Refer to */configure in your gcc sources.
+
+config BR2_GCC_VERSION
+	string "Default version of gcc"
+	default "13.3.0"
+	depends on BR2_PACKAGE_GCC_TARGET
+	help
+	  default gcc 13.3 for target
+
+# comment "needs w/ chr"
+# depends on PACKAGE_BINUTILS_TARGET

@@ -3,7 +3,7 @@ export BUILDKIT_COLORS="run=blue:error=red:cancel=yellow:warning=blue"
 export BUILDKIT_TTY_LOG_LINES=40
 
 DOCKER_ID="armbian_build:set"
-TARGET="build"
+TARGET="toolchain_prepare"
 echo $UID
 echo $USER
 

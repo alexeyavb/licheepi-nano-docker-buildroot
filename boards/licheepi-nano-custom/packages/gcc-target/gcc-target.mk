@@ -1,5 +1,70 @@
 ################################################################################
 #
+# Common variables for the gcc-initial and gcc-final packages.
+#
+################################################################################
+
+#
+# Version, site and source
+#
+
+GCC_VERSION = $(call qstrip,$(BR2_GCC_VERSION))
+
+ifeq ($(BR2_GCC_VERSION_ARC),y)
+GCC_SITE = $(call github,foss-for-synopsys-dwc-arc-processors,gcc,$(GCC_VERSION))
+GCC_SOURCE = gcc-$(GCC_VERSION).tar.gz
+else
+GCC_SITE = $(BR2_GNU_MIRROR:/=)/gcc/gcc-$(GCC_VERSION)
+GCC_SOURCE = gcc-$(GCC_VERSION).tar.xz
+endif
+
+HOST_GCC_LICENSE = GPL-2.0, GPL-3.0, LGPL-2.1, LGPL-3.0
+HOST_GCC_LICENSE_FILES = COPYING COPYING3 COPYING.LIB COPYING3.LIB
+
+HOST_GCC_COMMON_CONF_ENV = \
+        MAKEINFO=missing
+
+HOST_GCC_COMMON_MAKE_OPTS = \
+        gcc_cv_libc_provides_ssp=$(if $(BR2_TOOLCHAIN_HAS_SSP),yes,no)
+#
+# Xtensa special hook
+#
+define HOST_GCC_XTENSA_OVERLAY_EXTRACT
+        $(call arch-xtensa-overlay-extract,$(@D),gcc)
+endef
+
+#
+# Apply patches
+#
+
+# gcc is a special package, not named gcc, but gcc-initial and
+# gcc-final, but patches are nonetheless stored in package/gcc in the
+# tree, and potentially in BR2_GLOBAL_PATCH_DIR directories as well.
+define HOST_GCC_APPLY_PATCHES
+        for patchdir in \
+            package/gcc-target/$(GCC_VERSION) \
+            $(addsuffix /gcc/$(GCC_VERSION),$(call qstrip,$(BR2_GLOBAL_PATCH_DIR))) \
+            $(addsuffix /gcc,$(call qstrip,$(BR2_GLOBAL_PATCH_DIR))) ; do \
+                if test -d $${patchdir}; then \
+                        $(APPLY_PATCHES) $(@D) $${patchdir} \*.patch || exit 1; \
+                fi; \
+        done
+endef
+
+HOST_GCC_EXCLUDES = \
+        libjava/* libgo/*
+
+#
+# Create 'build' directory and configure symlink
+#
+
+define HOST_GCC_CONFIGURE_SYMLINK
+        mkdir -p $(@D)/build
+        ln -sf ../configure $(@D)/build/configure
+endef
+
+################################################################################
+#
 # gcc-target
 #
 ################################################################################
