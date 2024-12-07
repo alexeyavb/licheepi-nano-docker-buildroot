@@ -177,9 +177,28 @@ BR2_PACKAGE_HOST_UBOOT_TOOLS=y
 BR2_PACKAGE_HOST_UBOOT_TOOLS_BOOT_SCRIPT=y
 BR2_PACKAGE_HOST_UBOOT_TOOLS_BOOT_SCRIPT_SOURCE="$(BR2_EXTERNAL_LICHEEPI_NANO_CUSTOM_PATH)/board/licheepi_nano_custom/boot.cmd"
 
-#
+# !!!!!!!
+# chnge for nano-lvds-dts* files here
+# Space-separated list of paths to device tree source files
+# that will be copied to arch/ARCH/dts/ before starting the  build
+# BR2_TARGET_UBOOT_CUSTOM_DTS_PATH
+# !!!!!!
+
 # Global patch directory
 # BR2_GLOBAL_PATCH_DIR="$(BR2_EXTERNAL_LICHEEPI_NANO_CUSTOM_PATH)/../patches"
+
+# EXtra system build options
+BR2_ENABLE_LOCALE_PURGE=y
+BR2_ENABLE_LOCALE_WHITELIST="C en_US ru_RU ru_RU.ISO8859-5 ru_RU.CP866 ru_RU.CP1251 ru_RU.UTF-8 ru_RU.KOI8-R"
+BR2_GENERATE_LOCALE=="C en_US ru_RU ru_RU.ISO8859-5 ru_RU.CP866 ru_RU.CP1251 ru_RU.UTF-8 ru_RU.KOI8-R"
+BR2_TARGET_TZ_INFO=y
+BR2_TARGET_TZ_ZONELIST="default"
+BR2_TARGET_LOCALTIME=Asia/Yekaterinburg
+# BR2_ROOTFS_USERS_TABLES=""
+# BR2_ROOTFS_PRE_BUILD_SCRIPT=""
+# BR2_ROOTFS_POST_BUILD_SCRIPT=""
+# create /lib/lib*.so scripth here
+# BR2_ROOTFS_POST_FAKEROOT_SCRIPT=""
 
 #
 # Extra host dependencies to build images
@@ -190,6 +209,7 @@ BR2_PACKAGE_KMOD=y
 BR2_USE_MMU=y
 BR2_USE_WCHAR=y
 BR2_PACKAGE_GCC_TARGET=y
+BR2_ROOTFS_MERGED_USR=n
 
 #
 # Preload Linux firmware source repo for dev
