@@ -1,6 +1,6 @@
-diff -ruN ./a/Makefile ./b/Makefile
---- ./a/Makefile	2024-12-06 22:47:11.366800545 +0500
-+++ ./b/Makefile	2024-12-06 14:58:07.869196735 +0500
+diff -ruN a/Makefile b/Makefile
+--- a/Makefile	2024-12-06 22:47:11.366800545 +0500
++++ b/Makefile	2024-12-06 14:58:07.869196735 +0500
 @@ -721,13 +721,17 @@
  	@$(call MESSAGE,"Finalizing target directory")
  	$(call per-package-rsync,$(sort $(PACKAGES)),target,$(TARGET_DIR),copy)

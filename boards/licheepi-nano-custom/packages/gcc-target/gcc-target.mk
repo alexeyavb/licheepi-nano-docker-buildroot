@@ -7,8 +7,9 @@
 #
 # Version, site and source
 #
-BR2_GCC_VERSION = "13.3.0"
-GCC_VERSION = $(call qstrip,$(BR2_GCC_VERSION))
+# BR2_GCC_VERSION = "13.3.0"
+
+GCC_VERSION = $(call qstrip,$(BR2_GCC_TARGET_VERSION))
 HOST_GCC_LICENSE = GPL-2.0, GPL-3.0, LGPL-2.1, LGPL-3.0
 HOST_GCC_LICENSE_FILES = COPYING COPYING3 COPYING.LIB COPYING3.LIB
 
@@ -43,7 +44,7 @@ endef
 # Apply patches
 #
 
-# gcc is a special package, not named gcc, but gcc-initial and
+# gcc is a special package, not named gcc, but gcc-initial, gcc-target and
 # gcc-final, but patches are nonetheless stored in package/gcc in the
 # tree, and potentially in BR2_GLOBAL_PATCH_DIR directories as well.
 define HOST_GCC_APPLY_PATCHES
@@ -55,6 +56,13 @@ define HOST_GCC_APPLY_PATCHES
                         $(APPLY_PATCHES) $(@D) $${patchdir} \*.patch || exit 1; \
                 fi; \
         done
+	
+	echo environment prepare
+# prepare environment anf host-gcc-ext-final symlinks
+	/home/user/buildroot/2023.08.3/output/host/opt/ext-toolchain/relocate-sdk.sh
+	ln -s /home/user/buildroot/2023.08.3/output/host/opt/ext-toolchain/bin/* /home/user/buildroot/2023.08.3/output/host/bin/
+	echo end
+
 endef
 
 HOST_GCC_EXCLUDES = \
@@ -64,12 +72,8 @@ HOST_GCC_EXCLUDES = \
 # Create 'build' directory and configure symlink
 #
 
-define HOST_GCC_CONFIGURE_SYMLINK
-	/home/user/buildroot/2023.08.3/output/host/opt/ext-toolchain/relocate-sdk.sh
-        ln -sf /home/user/buildroot/2023.08.3/output/host/opt/ext-toolchain/bin/* /home/user/buildroot/2023.08.3/output/host/bin/
-        mkdir -p $(@D)/build
-        ln -sf ../configure $(@D)/build/configure
-        ln -sf /home/user/buildroot/2023.08.3/output/host/opt/ext-toolchain/bin/* /home/user/buildroot/2023.08.3/output/host/bin/
+define GCC_TARGET_CONFIGURE_SYMLINK
+    echo "link confifgure"
 endef
 
 ################################################################################
@@ -107,7 +111,7 @@ GCC_TARGET_CONF_OPTS += \
 	--disable-lto
 # Finally, we add some of our own flags
 GCC_TARGET_CONF_OPTS += \
-	--enable-languages=c \
+	--enable-languages=c,c++ \
 	--disable-boostrap \
 	--disable-libgomp \
 	--disable-nls \
@@ -123,6 +127,7 @@ GCC_TARGET_MAKE_OPTS += $(HOST_GCC_COMMON_MAKE_OPTS)
 define GCC_TARGET_INSTALL_HEADERS
 	cp -r $(STAGING_DIR)/usr/include $(TARGET_DIR)/usr
 endef
+
 GCC_TARGET_POST_INSTALL_TARGET_HOOKS += GCC_TARGET_INSTALL_HEADERS
 
 GCC_TARGET_GLIBC_LIBS = \

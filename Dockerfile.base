@@ -97,7 +97,7 @@ RUN echo end building of sdk
 #
 #####################################################################
 FROM base AS get_all_external
-
+WORKDIR ${HOME}/external
 ENV KRNL_VER=5
 ENV KRNL_MVER=12
 ENV KRNL_LVER=19
@@ -105,11 +105,19 @@ ENV KRNL_RLS=${KRNL_VER}.${KRNL_MVER}
 ENV KRNL_FRLS=${KRNL_VER}.${KRNL_MVER}.${KRNL_LVER}
 
 RUN echo start external downloads
-WORKDIR ${HOME}/external
 COPY boards/licheepi-nano-custom/tarballs/sdk/gcc_13_3_kernel_5_15/arm-buildroot-linux-gnueabi_sdk-buildroot.tar.gz sdk/
 COPY boards/licheepi-nano-custom/tarballs/uboot/uboot-v2021.01-f1c100s-4-br1.tar.gz uboot/
 COPY boards/licheepi-nano-custom/tarballs/kernel/linux-${KRNL_FRLS}.tar.xz kernel/
 COPY boards/licheepi-nano-custom/patches/kernel/${KRNL_FRLS} kernel/patches/
+
+#
+# @ Global patches
+COPY boards/licheepi-nano-custom/patches/buildroot patches/
+RUN echo patching main Makefile for preparing to build GCC_TARGET packcage
+WORKDIR ${HOME}/buildroot/${BUILDROOT_RELEASE}
+COPY boards/licheepi-nano-custom/patches/buildroot/001-AxR-Makefile.patch .
+RUN patch -Np1 -i ./001-AxR-Makefile.patch
+RUN rm -f ./001-AxR-Makefile.patch
 
 #
 # @ setting up external board settings for br
@@ -140,12 +148,14 @@ RUN BR2_EXTERNAL=${HOME}/external/licheepi_nano_custom make licheepi_nano_custom
 
 FROM br_config_prepare AS toolchain_prepare
 RUN make toolchain
+RUN ln -sf ${HOME}/buildroot/${BUILDROOT_RELEASE}/output/host/opt/ext-toolchain/bin/* ${HOME}/buildroot/${BUILDROOT_RELEASE}/output/host/bin/
+RUN ln -sf ${HOME}/buildroot/${BUILDROOT_RELEASE}/output/host/opt/ext-toolchain/include/* ${HOME}/buildroot/${BUILDROOT_RELEASE}/output/host/include/
 RUN make linux-source
 RUN make uboot-source
 
 FROM  toolchain_prepare AS build
 RUN make gcc-target
-# RUN make
+RUN make
 
 FROM scratch AS dist
 ARG USERNAME

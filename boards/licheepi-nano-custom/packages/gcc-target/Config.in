@@ -19,7 +19,7 @@ config BR2_EXTRA_GCC_TARGET_CONFIG_OPTIONS
 	  Including, but not limited to --disable-checking etc.
 	  Refer to */configure in your gcc sources.
 
-config BR2_GCC_VERSION
+config BR2_GCC_TARGET_VERSION
 	string "Default version of gcc"
 	default "13.3.0"
 	depends on BR2_PACKAGE_GCC_TARGET
