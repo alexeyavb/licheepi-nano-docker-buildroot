@@ -12,10 +12,14 @@ need create this from console
 
     cd /lib \
 	&& ln -s ln -s ./libgcc_s.so.1 ./libgcc_s.so \
-        && ln -s ./libdl.so.2 ./libdl.so \
-        && ln -s ./libc.so.6 ./libc.so \
-        && ln -s ./librt.so.1 ./librt.so \
-        && ln -s ./libthread_db.so.1 ./libthread_db.so \
-        && ln -s ./libutil.so.1  ./libutil.so
-
+	&& ln -s ./libdl.so.2 ./libdl.so \
+	&& ln -s ./libc.so.6 ./libc.so \
+	&& ln -s ./librt.so.1 ./librt.so \
+	&& ln -s ./libthread_db.so.1 ./libthread_db.so \
+	&& ln -s ./libutil.so.1  ./libutil.so \
+	&& ln -s libpthread.so.0 libpthread.so \
+	&& ln -sf libm.so.6 libm.so \
+	&& ln -sf libanl.so.1 libanl.so \
+	&& ln -sf libBrokenLocale.so.1 libBrokenLocale.so \
+	&& ln -s ld-linux.so.3 ld-linux.so
 code/
